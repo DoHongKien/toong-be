@@ -1,0 +1,30 @@
+package com.toong.modal.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "tour_luggages")
+public class TourLuggage extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @JsonIgnore
+    @ManyToOne
+    @JoinColumn(name = "tour_id")
+    private Tour tour;
+
+    private String name;
+
+    private String detail;
+}
