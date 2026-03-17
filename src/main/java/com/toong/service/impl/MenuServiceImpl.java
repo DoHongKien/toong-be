@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,7 +22,7 @@ public class MenuServiceImpl implements MenuService {
     public List<MenuResponseDto> getMainMenu() {
         // 1. Lấy tất cả menu cấp ROOT (không có cha) và đang active
         List<Menu> rootMenus = menuRepository.findByParentIsNullAndIsActiveTrueOrderByOrderIndexAsc();
-        
+
         // 2. Chuyển đổi và tự động đệ quy lấy menu con
         return rootMenus.stream()
                 .map(this::convertToDto)

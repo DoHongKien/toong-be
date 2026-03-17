@@ -3,7 +3,6 @@ package com.toong.controller;
 import com.toong.modal.ApiResponse;
 import com.toong.modal.dto.TourDetailDto;
 import com.toong.modal.dto.TourResponseDto;
-import com.toong.modal.entity.Tour;
 import com.toong.service.TourService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,8 +23,7 @@ public class TourController {
     public ResponseEntity<ApiResponse<List<TourResponseDto>>> getAllTours(
             @RequestParam(required = false, name = "region") String region,
             @RequestParam(required = false, name = "difficulty") String difficulty,
-            @RequestParam(required = false, name = "duration_days") Integer durationDays
-    ) {
+            @RequestParam(required = false, name = "duration_days") Integer durationDays) {
         List<TourResponseDto> tours = tourService.getAllTours(region, difficulty, durationDays);
         return ResponseEntity.ok(ApiResponse.success(tours));
     }
