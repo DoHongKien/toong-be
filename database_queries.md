@@ -145,6 +145,95 @@ CREATE TABLE pass_orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (pass_id) REFERENCES adventure_passes(id)
 );
+
+-- =============================================
+-- MỞ RỘNG: HỆ THỐNG QUẢN TRỊ (ADMIN & RBAC)
+-- =============================================
+
+-- 12. Bảng VAI TRÒ (ROLES)
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- 13. Bảng QUYỀN HẠN (PERMISSIONS)
+CREATE TABLE permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    module VARCHAR(50) NOT NULL
+);
+
+-- 14. Bảng TRUNG GIAN QUYỀN - VAI TRÒ (ROLE_PERMISSIONS)
+CREATE TABLE role_permissions (
+    role_id INT,
+    permission_id INT,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
+
+-- 15. Bảng NHÂN VIÊN (EMPLOYEES)
+CREATE TABLE employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100),
+    status ENUM('active', 'locked') DEFAULT 'active',
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- =============================================
+-- MỞ RỘNG: HỆ THỐNG CMS (NỘI DUNG ĐỘNG)
+-- =============================================
+
+-- 16. Bảng BANNERS
+CREATE TABLE banners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    image_url VARCHAR(500) NOT NULL,
+    link_url VARCHAR(500),
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- 17. Bảng BÀI VIẾT (BLOG_POSTS)
+CREATE TABLE blog_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    author_id INT,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    content TEXT NOT NULL,
+    thumbnail VARCHAR(500),
+    status ENUM('draft', 'published') DEFAULT 'draft',
+    published_at DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES employees(id)
+);
+
+-- 18. Bảng FAQ CHUNG (GENERAL_FAQS)
+CREATE TABLE general_faqs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    sort_order INT DEFAULT 0
+);
+
+-- 19. Bảng HỘP THƯ LIÊN HỆ (CONTACT_MESSAGES)
+CREATE TABLE contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    message TEXT NOT NULL,
+    status ENUM('new', 'contacted', 'resolved') DEFAULT 'new',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ---
@@ -255,6 +344,47 @@ SELECT
 FROM adventure_passes p
 LEFT JOIN pass_features f ON p.id = f.pass_id
 ORDER BY p.price ASC;
+```
+
+### 2.6 Hệ thống Quản trị (Admin Dashboard)
+
+**Lấy danh sách quyền hạn của một nhân viên (Dùng cho RBAC check):**
+```sql
+SELECT p.code 
+FROM permissions p
+JOIN role_permissions rp ON p.id = rp.permission_id
+JOIN employees e ON e.role_id = rp.role_id
+WHERE e.username = 'admin_user' AND e.status = 'active';
+```
+
+**Thêm nhân viên mới và gán vai trò:**
+```sql
+-- Thêm vai trò Editor nếu chưa có
+INSERT INTO roles (name, code) VALUES ('Biên tập viên', 'EDITOR');
+
+-- Thêm nhân viên
+INSERT INTO employees (role_id, username, password_hash, full_name, email) 
+VALUES (2, 'editor_01', '$2b$12$hashedpassword...', 'Nguyễn Văn A', 'a.nguyen@domain.com');
+```
+
+### 2.7 Trang chủ & CMS nội dung động
+
+**Lấy danh sách Banner đang hoạt động:**
+```sql
+SELECT title, image_url, link_url 
+FROM banners 
+WHERE is_active = TRUE 
+ORDER BY sort_order ASC;
+```
+
+**Lấy danh sách bài viết mới nhất (Blog):**
+```sql
+SELECT b.title, b.slug, b.thumbnail, b.published_at, e.full_name AS author
+FROM blog_posts b
+JOIN employees e ON b.author_id = e.id
+WHERE b.status = 'published'
+ORDER BY b.published_at DESC
+LIMIT 6;
 ```
 
 ---

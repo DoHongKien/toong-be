@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TourCostDetailRepository extends JpaRepository<TourCostDetail, Integer> {
+public interface TourCostDetailRepository extends JpaRepository<TourCostDetail, Long> {
 
     List<TourCostDetail> findByTourId(Integer tourId);
 

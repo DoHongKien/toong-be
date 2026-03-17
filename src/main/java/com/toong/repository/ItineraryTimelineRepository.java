@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ItineraryTimelineRepository extends JpaRepository<ItineraryTimeline, Integer> {
+public interface ItineraryTimelineRepository extends JpaRepository<ItineraryTimeline, Long> {
 
     List<ItineraryTimeline> findByItineraryId(Integer itineraryId);
 

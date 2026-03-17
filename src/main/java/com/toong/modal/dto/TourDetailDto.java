@@ -39,7 +39,7 @@ public class TourDetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ItineraryDto {
-        private Integer id;
+        private Long id;
         private Integer dayNumber;
         private String title;
         private String description;
@@ -51,7 +51,7 @@ public class TourDetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ItineraryTimelineDto {
-        private Integer id;
+        private Long id;
         private String executionTime;
         private String activity;
     }
@@ -61,7 +61,7 @@ public class TourDetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TourCostDetailDto {
-        private Integer id;
+        private Long id;
         private Boolean isIncluded;
         private String content;
     }
@@ -71,7 +71,7 @@ public class TourDetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TourLuggageDto {
-        private Integer id;
+        private Long id;
         private String name;
         private String detail;
     }
@@ -81,7 +81,7 @@ public class TourDetailDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TourFaqDto {
-        private Integer id;
+        private Long id;
         private String question;
         private String answer;
     }

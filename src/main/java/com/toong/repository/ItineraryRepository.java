@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ItineraryRepository extends JpaRepository<Itinerary, Integer> {
+public interface ItineraryRepository extends JpaRepository<Itinerary, Long> {
 
     List<Itinerary> findByTourIdOrderByDayNumber(Integer tourId);
 

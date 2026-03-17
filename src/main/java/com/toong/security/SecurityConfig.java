@@ -29,11 +29,21 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                // Auth endpoint
+                .requestMatchers("/api/v1/admin/auth/**").permitAll()
+                // Public Tour endpoints
                 .requestMatchers("/api/v1/tours/**").permitAll()
+                // Public Adventure Pass endpoints
                 .requestMatchers("/api/v1/adventure-passes/**").permitAll()
+                // Public Menu endpoints
                 .requestMatchers("/api/v1/menus/**").permitAll()
+                // Public Banner, Blog, FAQ, Contact
+                .requestMatchers("/api/v1/banners/**").permitAll()
+                .requestMatchers("/api/v1/blog-posts/**").permitAll()
+                .requestMatchers("/api/v1/faqs/**").permitAll()
+                .requestMatchers("/api/v1/contact/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                // All other requests require authentication
                 .anyRequest().authenticated()
             );
 

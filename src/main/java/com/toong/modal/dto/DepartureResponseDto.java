@@ -1,24 +1,25 @@
 package com.toong.modal.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class DepartureResponseDto {
 
-    private Integer id;
+    private Long id;
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate depositDeadline;
+    private LocalDate paymentDeadline;
     private BigDecimal price;
     private Integer availableSlots;
     private String status;
-
-}
+}

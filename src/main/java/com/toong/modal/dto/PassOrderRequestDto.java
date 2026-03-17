@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PassOrderRequestDto {
 
-    private Integer passId;
+    private Long passId;
 
     private String firstName;
 

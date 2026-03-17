@@ -35,14 +35,16 @@ public class BookingServiceImpl implements BookingService {
 
         return departures.stream().map(d -> {
             Integer available = d.getTotalSlots() - d.getBookedSlots();
-            return new DepartureResponseDto(
-                    d.getId(),
-                    d.getStartDate(),
-                    d.getEndDate(),
-                    d.getPrice(),
-                    available,
-                    d.getStatus()
-            );
+            return DepartureResponseDto.builder()
+                    .id(d.getId() != null ? Long.valueOf(d.getId()) : null)
+                    .startDate(d.getStartDate())
+                    .endDate(d.getEndDate())
+                    .depositDeadline(d.getDepositDeadline())
+                    .paymentDeadline(d.getPaymentDeadline())
+                    .price(d.getPrice())
+                    .availableSlots(available)
+                    .status(d.getStatus())
+                    .build();
         }).toList();
     }
 

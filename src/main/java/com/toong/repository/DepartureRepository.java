@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface DepartureRepository extends JpaRepository<Departure, Integer> {
+public interface DepartureRepository extends JpaRepository<Departure, Long> {
 
     List<Departure> findByTourId(Long tourId);
     List<Departure> findByTourSlug(String slug);

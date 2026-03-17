@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class BookingRequestDto {
 
-    private Integer departureId;
+    private Long departureId;
 
     private String firstName;
 

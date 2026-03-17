@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface PassFeatureRepository extends JpaRepository<PassFeature, Integer> {
+public interface PassFeatureRepository extends JpaRepository<PassFeature, Long> {
 
     List<PassFeature> findByPassId(Integer passId);
 
