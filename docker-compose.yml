@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.2
+    container_name: toong_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: toong_db
+      MYSQL_USER: toong_user
+      MYSQL_PASSWORD: toong1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - toong_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  toong_mysql_data:
+    driver: local

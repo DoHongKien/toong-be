@@ -19,7 +19,6 @@ public class AdminRoleController {
 
     private final RoleService roleService;
 
-    // ---- Roles ----
     @GetMapping("/api/v1/admin/roles")
     public ResponseEntity<ApiResponse<List<RoleResponseDto>>> getAllRoles() {
         return ResponseEntity.ok(ApiResponse.success(roleService.getAllRoles()));

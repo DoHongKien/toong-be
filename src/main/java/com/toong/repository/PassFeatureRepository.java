@@ -11,4 +11,6 @@ public interface PassFeatureRepository extends JpaRepository<PassFeature, Long> 
 
     List<PassFeature> findByPassId(Integer passId);
 
+    List<PassFeature> findByPassIdOrderByIdAsc(Long passId);
+
 }

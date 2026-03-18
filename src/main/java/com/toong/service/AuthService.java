@@ -5,4 +5,5 @@ import com.toong.modal.dto.LoginResponseDto;
 
 public interface AuthService {
     LoginResponseDto login(LoginRequestDto request);
+    String encodePassword(String rawPassword);
 }
