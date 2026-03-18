@@ -1,10 +1,6 @@
 package com.toong.service.impl;
 
-import com.toong.modal.dto.PassOrderResponseDto;
-import com.toong.modal.dto.PaginationResponse;
-import com.toong.modal.dto.TourRequestDto;
-import com.toong.modal.dto.TourResponseDto;
-import com.toong.modal.dto.UpdateStatusDto;
+import com.toong.modal.dto.*;
 import com.toong.modal.entity.PassOrder;
 import com.toong.modal.entity.Tour;
 import com.toong.repository.PassOrderRepository;
@@ -25,6 +21,22 @@ public class AdminTourServiceImpl implements AdminTourService {
 
     private final TourRepository tourRepository;
     private final PassOrderRepository passOrderRepository;
+
+    @Override
+    public PaginationResponse<TourResponseDto> getAllTours(String name, int page, int limit) {
+            Pageable pageable = PageRequest.of(page - 1, limit);
+
+        Page<Tour> tourPage = tourRepository.findTourByName(name, pageable);
+        var data = tourPage.getContent().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+
+        return PaginationResponse.<TourResponseDto>builder()
+                .data(data)
+                .pagination(PaginationResponse.PaginationMeta.builder()
+                        .page(page).limit(limit).total(tourPage.getTotalElements()).build())
+                .build();
+    }
 
     @Override
     public TourResponseDto createTour(TourRequestDto request) {

@@ -1,6 +1,8 @@
 package com.toong.controller;
 
 import com.toong.modal.ApiResponse;
+import com.toong.modal.dto.BookingResponseDto;
+import com.toong.modal.dto.PaginationResponse;
 import com.toong.modal.dto.TourRequestDto;
 import com.toong.modal.dto.TourResponseDto;
 import com.toong.service.AdminTourService;
@@ -15,6 +17,14 @@ import org.springframework.web.bind.annotation.*;
 public class AdminTourController {
 
     private final AdminTourService adminTourService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<PaginationResponse<TourResponseDto>>> getAll(
+            @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(ApiResponse.success(adminTourService.getAllTours(name, page, limit)));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<TourResponseDto>> create(@RequestBody TourRequestDto request) {

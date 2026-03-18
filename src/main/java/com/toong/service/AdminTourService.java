@@ -7,6 +7,7 @@ import com.toong.modal.dto.TourResponseDto;
 import com.toong.modal.dto.UpdateStatusDto;
 
 public interface AdminTourService {
+    PaginationResponse<TourResponseDto> getAllTours(String name, int page, int limit);
     TourResponseDto createTour(TourRequestDto request);
     TourResponseDto updateTour(Long id, TourRequestDto request);
     void deleteTour(Long id);
