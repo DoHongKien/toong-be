@@ -6,6 +6,7 @@ import com.toong.modal.entity.Tour;
 import com.toong.repository.PassOrderRepository;
 import com.toong.repository.TourRepository;
 import com.toong.service.AdminTourService;
+import com.toong.service.MinioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +22,7 @@ public class AdminTourServiceImpl implements AdminTourService {
 
     private final TourRepository tourRepository;
     private final PassOrderRepository passOrderRepository;
+    private final MinioService minioService;
 
     @Override
     public PaginationResponse<TourResponseDto> getAllTours(String name, int page, int limit) {
@@ -105,7 +107,7 @@ public class AdminTourServiceImpl implements AdminTourService {
     private TourResponseDto toDto(Tour t) {
         return TourResponseDto.builder()
                 .id(t.getId()).name(t.getName()).slug(t.getSlug())
-                .cardImage(t.getCardImage()).badge(t.getBadge()).region(t.getRegion())
+                .cardImage(minioService.getPresignedUrl(t.getCardImage())).badge(t.getBadge()).region(t.getRegion())
                 .durationDays(t.getDurationDays()).durationNights(t.getDurationNights())
                 .difficulty(t.getDifficulty()).summary(t.getSummary())
                 .basePrice(t.getBasePrice()).build();

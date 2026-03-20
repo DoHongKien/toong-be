@@ -1,7 +1,6 @@
 package com.toong.controller;
 
 import com.toong.modal.ApiResponse;
-import com.toong.modal.dto.BookingResponseDto;
 import com.toong.modal.dto.PaginationResponse;
 import com.toong.modal.dto.TourRequestDto;
 import com.toong.modal.dto.TourResponseDto;

@@ -4,6 +4,7 @@ import com.toong.modal.dto.TourDetailDto;
 import com.toong.modal.dto.TourResponseDto;
 import com.toong.modal.entity.Tour;
 import com.toong.repository.TourRepository;
+import com.toong.service.MinioService;
 import com.toong.service.TourService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,11 @@ import java.util.stream.Collectors;
 public class TourServiceImpl implements TourService {
 
     private final TourRepository tourRepository;
+    private final MinioService minioService;
 
-    public TourServiceImpl(TourRepository tourRepository) {
+    public TourServiceImpl(TourRepository tourRepository, MinioService minioService) {
         this.tourRepository = tourRepository;
+        this.minioService = minioService;
     }
 
     @Override
@@ -48,7 +51,7 @@ public class TourServiceImpl implements TourService {
                 .id(tour.getId())
                 .name(tour.getName())
                 .slug(tour.getSlug())
-                .cardImage(tour.getCardImage())
+                .cardImage(minioService.getPresignedUrl(tour.getCardImage()))
                 .badge(tour.getBadge())
                 .region(tour.getRegion())
                 .durationDays(tour.getDurationDays())
@@ -72,8 +75,8 @@ public class TourServiceImpl implements TourService {
                 .id(tour.getId())
                 .name(tour.getName())
                 .slug(tour.getSlug())
-                .heroImage(tour.getHeroImage())
-                .cardImage(tour.getCardImage())
+                .heroImage(minioService.getPresignedUrl(tour.getHeroImage()))
+                .cardImage(minioService.getPresignedUrl(tour.getCardImage()))
                 .badge(tour.getBadge())
                 .region(tour.getRegion())
                 .durationDays(tour.getDurationDays())

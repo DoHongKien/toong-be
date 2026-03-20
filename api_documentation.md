@@ -335,11 +335,36 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
     }
     ```
 
-### 4.2 [ADMIN] Lấy danh sách nhân viên
+### 4.2 [ADMIN] Lấy danh sách nhân viên (phân trang)
 *   **Endpoint:** `GET /api/v1/admin/employees`
 *   **Query Parameters:**
     *   `status`: `active` | `locked`
     *   `role_id`: lọc theo vai trò
+    *   `page`, `limit`: phân trang
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "data": [
+          {
+            "id": 1,
+            "username": "admin_user",
+            "fullName": "Nguyễn Văn A",
+            "email": "a.nguyen@domain.com",
+            "status": "active",
+            "lastLogin": "2026-03-17T08:00:00Z",
+            "role": { "id": 1, "name": "Quản trị viên", "code": "ADMIN" }
+          }
+        ],
+        "pagination": { "page": 1, "limit": 20, "total": 4 }
+      }
+    }
+    ```
+
+### 4.2b [ADMIN] Lấy tất cả nhân viên (không phân trang — dùng cho dropdown)
+*   **Endpoint:** `GET /api/v1/admin/employees/all`
+*   **Mục đích:** Trả về toàn bộ nhân viên active dưới dạng flat array — dùng cho các dropdown Select trong UI (như màn cấu hình thông báo).
 *   **Response:**
     ```json
     {
@@ -347,11 +372,7 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
       "data": [
         {
           "id": 1,
-          "username": "admin_user",
-          "full_name": "Nguyễn Văn A",
-          "email": "a.nguyen@domain.com",
-          "status": "active",
-          "last_login": "2026-03-17T08:00:00Z",
+          "fullName": "Nguyễn Văn A",
           "role": { "id": 1, "name": "Quản trị viên", "code": "ADMIN" }
         }
       ]
@@ -582,17 +603,413 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
     {
       "status": "success",
       "data": {
-        "total_bookings": 150,
-        "bookings_this_month": 23,
-        "total_revenue": 450000000.00,
-        "revenue_this_month": 68000000.00,
-        "pending_bookings": 12,
-        "new_contact_messages": 5,
-        "total_tours": 8,
-        "total_employees": 4
+        "totalBookings": 150,
+        "bookingsThisMonth": 23,
+        "totalRevenue": 450000000.00,
+        "revenueThisMonth": 68000000.00,
+        "pendingBookings": 12,
+        "newContactMessages": 5,
+        "totalTours": 8,
+        "totalEmployees": 4
       }
     }
     ```
+
+---
+
+## 10. Module Media (MinIO Storage)
+
+> Ảnh của tours và các entities khác được lưu trữ trên **MinIO**.
+> Sau khi migration, `hero_image` / `card_image` trong DB là object path (e.g. `tours/taynguyen/ta-nang-phan-dung/hero.jpg`).
+> Các GET endpoint tự động convert sang **presigned URL** có hiệu lực 7 ngày trước khi trả về client.
+
+### 10.1 Upload ảnh lên MinIO [ADMIN]
+*   **Endpoint:** `POST /api/v1/media/upload-image`
+*   **Auth:** Yêu cầu JWT
+*   **Content-Type:** `multipart/form-data`
+*   **Form field:** `file` — file ảnh cần upload
+*   **Response:** `201 Created`
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "objectName": "3f2ca1b0-uuid-...-hero.jpg"
+      }
+    }
+    ```
+*   **Lưu ý:** `objectName` trả về là MinIO object key — dùng làm giá trị `hero_image` / `card_image` khi tạo/cập nhật tour qua API.
+
+### 10.2 Preview / Stream ảnh từ MinIO [PUBLIC]
+*   **Endpoint:** `GET /api/v1/media/preview?object={objectName}`
+*   **Auth:** Không cần
+*   **Query Parameter:**
+    *   `object` — MinIO object key, e.g. `tours/taynguyen/ta-nang-phan-dung/hero.jpg`
+*   **Response:** Stream binary ảnh với đúng `Content-Type` (image/jpeg, image/png...)
+*   **Dùng khi:** Nhúng ảnh trực tiếp qua Spring Boot proxy thay vì presigned URL.
+
+### 10.3 Cấu trúc folder MinIO
+
+Ánh xạ folder được thiết kế theo: `tours/{region}/{slug}/`
+
+```
+toong-images/          ← MinIO bucket
+└── tours/
+    ├── taynguyen/
+    │   ├── ta-nang-phan-dung/
+    │   │   ├── hero.jpg    ← hero_image
+    │   │   └── card.jpg    ← card_image
+    │   └── bidoup/
+    │       ├── hero.jpg
+    │       └── card.jpg
+    ├── nam/
+    │   └── bu-gia-map/
+    │       ├── hero.jpg
+    │       └── card.jpg
+    └── trung/
+        ├── 8-nang-tien/
+        └── la-ngau/
+```
+
+### 10.4 Cách ảnh được phục vụ trong GET Tour
+
+Khi gọi `GET /api/v1/tours` hoặc `GET /api/v1/tours/:slug`, backend tự động:
+1. Đọc `card_image` / `hero_image` từ DB (object path MinIO)
+2. Gọi `MinioService.getPresignedUrl(objectPath)` → sinh URL có hiệu lực **7 ngày**
+3. Trả về presigned URL trong response — frontend có thể dùng trực tiếp trong `<img src="...">`
+
+> **Backward compatible:** Nếu field vẫn là URL ngoài (`https://images.unsplash.com/...`), sẽ được pass-through không đổi.
+
+---
+
+## 11. Module Data Migration [PUBLIC — Internal Use Only]
+
+> Endpoint phục vụ việc seed dữ liệu nội bộ (không yêu cầu JWT).
+> **Không expose ra production** hoặc xoá sau khi hoàn tất migration.
+
+### 11.1 Migrate ảnh Tour lên MinIO
+*   **Endpoint:** `POST /api/v1/migrate/tour-images`
+*   **Auth:** Không cần JWT
+*   **Query Parameters:**
+    *   `dryRun=true` — Preview, không thực sự upload hay update DB
+    *   `dryRun=false` — Chạy thật (mặc định)
+*   **Flow xử lý:**
+    1. Lấy toàn bộ tours từ DB
+    2. Với mỗi tour, kiểm tra `hero_image` và `card_image`:
+       - Nếu là URL ngoài (`http://...`) → download bytes → upload lên MinIO
+       - Nếu đã là MinIO object path → bỏ qua (skip)
+    3. Lưu vào MinIO theo path: `tours/{region}/{slug}/hero.jpg` và `card.jpg`
+    4. Cập nhật `hero_image` / `card_image` trong DB với MinIO object path
+*   **Response:** `200 OK`
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "total_tours": 5,
+        "success": 10,
+        "skipped": 0,
+        "failed": 0,
+        "dryRun": false,
+        "details": [
+          {
+            "id": 1,
+            "slug": "ta-nang-phan-dung",
+            "region": "taynguyen",
+            "hero": "OK:tours/taynguyen/ta-nang-phan-dung/hero.jpg",
+            "card": "OK:tours/taynguyen/ta-nang-phan-dung/card.jpg",
+            "dbUpdated": true
+          }
+        ]
+      }
+    }
+    ```
+*   **Giá trị của trường `hero` / `card` trong details:**
+    *   `OK:{path}` — Upload + update DB thành công
+    *   `SKIP:already_minio:{path}` — Đã là MinIO path, bỏ qua
+    *   `SKIP:empty` — Field đang null/rỗng
+    *   `FAIL:{message}` — Lỗi download hoặc upload
+
+---
+
+## 12. Module Tour FAQs
+
+> Quản lý câu hỏi thường gặp (FAQ) theo từng tour cụ thể.
+> Khác với Module 7 (General FAQs) là FAQ chung của website, Tour FAQs gắn với từng tour và hiển thị trong màn **Tour Detail**.
+
+### 12.1 Lấy FAQ theo Tour [PUBLIC] (`TourDetail.jsx`)
+*   **Endpoint:** `GET /api/v1/tours/:tourId/faqs`
+*   **path Variable:** `tourId` — ID của tour
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "tourId": 3,
+          "tourName": "Tà Năng - Phan Dũng",
+          "question": "Tour này có cần kinh nghiệm trekking không?",
+          "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+          "sortOrder": 1
+        }
+      ]
+    }
+    ```
+*   **Lưu ý:** Dữ liệu trả về đã được sắp xếp theo `sort_order` tăng dần.
+*   FAQs theo tour cũng được **nhúng sẵn** trong response của `GET /api/v1/tours/:slug` (field `faqs`).
+
+### 12.2 [ADMIN] Lấy toàn bộ Tour FAQs
+*   **Endpoint:** `GET /api/v1/admin/tour-faqs`
+*   **Query Parameters:**
+    *   `tourId` *(optional)*: lọc FAQ theo tour cụ thể
+*   **Response:** Danh sách tất cả FAQ theo `tourId`.
+
+### 12.3 [ADMIN] Tạo Tour FAQ mới
+*   **Endpoint:** `POST /api/v1/admin/tour-faqs`
+*   **Request Body:**
+    ```json
+    {
+      "tourId": 3,
+      "question": "Tour này có cần kinh nghiệm trekking không?",
+      "answer": "Không cần kinh nghiệm trước, chỉ cần sức khỏe tốt.",
+      "sortOrder": 1
+    }
+    ```
+*   **Response:** `201 Created` + tour FAQ object vừa tạo.
+
+### 12.4 [ADMIN] Cập nhật Tour FAQ
+*   **Endpoint:** `PUT /api/v1/admin/tour-faqs/:id`
+*   **Request Body:** (các trường cần cập nhật)
+    ```json
+    {
+      "question": "Câu hỏi đã chỉnh sửa?",
+      "answer": "Câu trả lời mới.",
+      "sortOrder": 2
+    }
+    ```
+*   **Response:** `200 OK` + tour FAQ object đã cập nhật.
+*   **Lưu ý:** Dùng `PATCH /api/v1/admin/tour-faqs/:id` để cập nhật một phần (partial update).
+
+### 12.5 [ADMIN] Xóa Tour FAQ
+*   **Endpoint:** `DELETE /api/v1/admin/tour-faqs/:id`
+*   **Response:** `200 OK` + `{ "status": "success", "message": "TourFAQ đã được xóa." }`
+
+---
+
+## 13. Module Profile (Tài khoản cá nhân) [ADMIN]
+
+> Cho phép nhân viên đang đăng nhập xem và cập nhật thông tin cá nhân của chính mình (không cần quyền SUPER_ADMIN).
+> Token JWT trong header được dùng để xác định danh tính — không cần truyền `id` lên URL.
+
+### 13.1 [ADMIN] Lấy thông tin profile bản thân
+*   **Endpoint:** `GET /api/v1/admin/profile`
+*   **Auth:** `Authorization: Bearer <token>`
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 1,
+        "username": "kien.admin",
+        "fullName": "Kiên Đỗ",
+        "email": "kien@toong.vn",
+        "status": "active",
+        "lastLogin": "2026-03-20T03:00:00Z",
+        "createdAt": "2025-01-01T00:00:00Z",
+        "role": {
+          "id": 1,
+          "name": "Quản trị viên",
+          "code": "ADMIN"
+        }
+      }
+    }
+    ```
+*   **Logic Backend:** Lấy `employee_id` từ JWT claims → trả về employee + role.
+
+### 13.2 [ADMIN] Cập nhật thông tin cá nhân
+*   **Endpoint:** `PUT /api/v1/admin/profile`
+*   **Auth:** `Authorization: Bearer <token>`
+*   **Request Body:**
+    ```json
+    {
+      "fullName": "Kiên Đỗ",
+      "email": "kien.new@toong.vn"
+    }
+    ```
+*   **Lưu ý:**
+    - Chỉ được cập nhật `fullName` và `email` — các trường như `username`, `role`, `status` **không được phép chỉnh sửa** qua endpoint này.
+    - Backend phải kiểm tra email mới chưa bị trùng với nhân viên khác.
+*   **Response:** `200 OK`
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 1,
+        "fullName": "Kiên Đỗ",
+        "email": "kien.new@toong.vn"
+      }
+    }
+    ```
+
+### 13.3 [ADMIN] Đổi mật khẩu
+*   **Endpoint:** `POST /api/v1/admin/profile/change-password`
+*   **Auth:** `Authorization: Bearer <token>`
+*   **Request Body:**
+    ```json
+    {
+      "currentPassword": "oldSecret123",
+      "newPassword": "newSecret456"
+    }
+    ```
+*   **Logic Backend:**
+    1. Lấy `employee_id` từ JWT.
+    2. Load `password_hash` của employee từ DB.
+    3. Dùng `bcrypt.compare(currentPassword, password_hash)` — nếu sai → trả `400` kèm message.
+    4. Hash `newPassword` mới → cập nhật DB.
+*   **Response thành công:** `200 OK`
+    ```json
+    { "status": "success", "message": "Đổi mật khẩu thành công." }
+    ```
+*   **Response lỗi (sai mật khẩu hiện tại):** `400 Bad Request`
+    ```json
+    { "status": "error", "message": "Mật khẩu hiện tại không đúng." }
+    ```
+
+---
+
+## 14. Module Notifications [ADMIN]
+
+> Hệ thống thông báo nội bộ CMS. Backend push vào bảng `notifications` mỗi khi có sự kiện (booking, pass order, contact mới). Routing được cấu hình qua bảng `notification_configs` — xác định loại thông báo nào gửi cho role nào / user cụ thể / tất cả.
+
+### Database Schema (3 bảng)
+
+```sql
+CREATE TABLE notifications (
+  id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+  type        ENUM('booking', 'contact', 'pass') NOT NULL,
+  title       VARCHAR(255) NOT NULL,
+  description TEXT,
+  ref_id      BIGINT,        -- ID booking / contact / pass order
+  ref_path    VARCHAR(100),  -- route CMS, e.g. /cms/bookings
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE notification_recipients (
+  id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+  notification_id BIGINT  NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
+  employee_id     BIGINT  NOT NULL REFERENCES employees(id)    ON DELETE CASCADE,
+  is_read         BOOLEAN DEFAULT FALSE,
+  read_at         TIMESTAMP NULL,
+  UNIQUE KEY uq_notif_emp (notification_id, employee_id)
+);
+
+CREATE TABLE notification_configs (
+  id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+  notif_type  ENUM('booking', 'contact', 'pass') NOT NULL,
+  target_type ENUM('all', 'role', 'employee')    NOT NULL,
+  target_id   BIGINT  NULL,   -- role_id hoặc employee_id; NULL nếu target_type='all'
+  is_active   BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMP DEFAULT NOW(),
+  UNIQUE KEY uq_config (notif_type, target_type, target_id)
+);
+```
+
+### 14.1 [ADMIN] Lấy danh sách thông báo của user hiện tại
+*   **Endpoint:** `GET /api/v1/admin/notifications`
+*   **Query Parameters:**
+    *   `limit`: số thông báo cần lấy (mặc định: `20`)
+    *   `unreadOnly`: `true` | `false`
+*   **Logic Backend:** Lấy `employee_id` từ JWT → query `notification_recipients` JOIN `notifications`.
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 12,
+          "type": "booking",
+          "title": "Booking mới BK-10296",
+          "description": "Nguyễn Văn A đặt tour Tà Năng - 2 người",
+          "refId": 101,
+          "refPath": "/cms/bookings",
+          "isRead": false,
+          "createdAt": "2026-03-20T06:30:00Z"
+        }
+      ],
+      "unreadCount": 3
+    }
+    ```
+
+### 14.2 [ADMIN] Đánh dấu 1 thông báo đã đọc
+*   **Endpoint:** `PATCH /api/v1/admin/notifications/:id/read`
+*   **Logic Backend:** Update `notification_recipients.is_read = true`, `read_at = NOW()` cho đúng cặp `(notification_id, employee_id)`.
+*   **Response:** `200 OK` + `{ "status": "success" }`
+
+### 14.3 [ADMIN] Đánh dấu tất cả thông báo đã đọc
+*   **Endpoint:** `PATCH /api/v1/admin/notifications/read-all`
+*   **Logic Backend:** Update toàn bộ `notification_recipients` của `employee_id` hiện tại.
+*   **Response:** `200 OK` + `{ "status": "success" }`
+
+### 14.4 [ADMIN] Lấy danh sách cấu hình routing thông báo
+*   **Endpoint:** `GET /api/v1/admin/notification-configs`
+*   **Response:**
+    ```json
+    {
+      "status": "success",
+      "data": [
+        {
+          "id": 1,
+          "notifType": "booking",
+          "targetType": "role",
+          "targetId": 1,
+          "targetLabel": "Quản trị viên",
+          "isActive": true,
+          "createdAt": "2026-03-20T00:00:00Z"
+        }
+      ]
+    }
+    ```
+*   **Lưu ý:** `targetLabel` là tên role hoặc tên nhân viên được backend resolve tự động; `targetId` = null nếu `targetType = 'all'`.
+
+### 14.5 [ADMIN] Tạo cấu hình routing mới
+*   **Endpoint:** `POST /api/v1/admin/notification-configs`
+*   **Request Body:**
+    ```json
+    {
+      "notifType": "booking",
+      "targetType": "role",
+      "targetId": 1
+    }
+    ```
+*   **Validation:**
+    - `targetType = 'all'` → `targetId` phải là `null`
+    - `targetType = 'role'` → `targetId` phải là ID hợp lệ trong bảng `roles`
+    - `targetType = 'employee'` → `targetId` phải là ID hợp lệ trong bảng `employees`
+    - Không được tạo bản ghi trùng (UNIQUE constraint)
+*   **Response:** `201 Created` + config object vừa tạo.
+
+### 14.6 [ADMIN] Cập nhật cấu hình routing
+*   **Endpoint:** `PUT /api/v1/admin/notification-configs/:id`
+*   **Request Body:** (các trường cần cập nhật)
+    ```json
+    {
+      "notifType": "contact",
+      "targetType": "all",
+      "targetId": null
+    }
+    ```
+*   **Response:** `200 OK` + config object đã cập nhật.
+
+### 14.7 [ADMIN] Bật / Tắt cấu hình routing
+*   **Endpoint:** `PATCH /api/v1/admin/notification-configs/:id/status`
+*   **Request Body:**
+    ```json
+    { "isActive": false }
+    ```
+*   **Response:** `200 OK` + config object với `isActive` mới.
+
+### 14.8 [ADMIN] Xóa cấu hình routing
+*   **Endpoint:** `DELETE /api/v1/admin/notification-configs/:id`
+*   **Response:** `200 OK` + `{ "status": "success", "message": "Cấu hình đã được xóa." }`
 
 ---
 
@@ -632,6 +1049,21 @@ Tài liệu này xác định các điểm cuối (endpoints) API cần thiết,
 | Contact | `/api/v1/admin/contact-messages` | GET | ADMIN |
 | Contact | `/api/v1/admin/contact-messages/:id/status` | PATCH | ADMIN |
 | Dashboard | `/api/v1/admin/dashboard/stats` | GET | ADMIN |
+| Media | `/api/v1/media/upload-image` | POST | ADMIN |
+| Media | `/api/v1/media/preview` | GET | PUBLIC |
+| Migration | `/api/v1/migrate/tour-images` | POST | PUBLIC (internal) |
+| Tour FAQs | `/api/v1/tours/:tourId/faqs` | GET | PUBLIC |
+| Tour FAQs | `/api/v1/admin/tour-faqs` | GET / POST | ADMIN |
+| Tour FAQs | `/api/v1/admin/tour-faqs/:id` | PUT / PATCH / DELETE | ADMIN |
+| Profile | `/api/v1/admin/profile` | GET | ADMIN |
+| Profile | `/api/v1/admin/profile` | PUT | ADMIN |
+| Profile | `/api/v1/admin/profile/change-password` | POST | ADMIN |
+| Notifications | `/api/v1/admin/notifications` | GET | ADMIN |
+| Notifications | `/api/v1/admin/notifications/:id/read` | PATCH | ADMIN |
+| Notifications | `/api/v1/admin/notifications/read-all` | PATCH | ADMIN |
+| Notification Configs | `/api/v1/admin/notification-configs` | GET / POST | ADMIN |
+| Notification Configs | `/api/v1/admin/notification-configs/:id` | PUT / DELETE | ADMIN |
+| Notification Configs | `/api/v1/admin/notification-configs/:id/status` | PATCH | ADMIN |
 
 ---
 

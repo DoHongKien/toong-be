@@ -1,13 +1,16 @@
 package com.toong.service.impl;
 
+import com.toong.event.NotificationEvent;
 import com.toong.modal.dto.ContactMessageResponseDto;
 import com.toong.modal.dto.ContactRequestDto;
 import com.toong.modal.dto.PaginationResponse;
 import com.toong.modal.dto.UpdateStatusDto;
 import com.toong.modal.entity.ContactMessage;
+import com.toong.modal.enums.NotifType;
 import com.toong.repository.ContactMessageRepository;
 import com.toong.service.ContactMessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 public class ContactMessageServiceImpl implements ContactMessageService {
 
     private final ContactMessageRepository contactMessageRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void createMessage(ContactRequestDto request) {
@@ -29,7 +33,16 @@ public class ContactMessageServiceImpl implements ContactMessageService {
                 .fullName(request.getFullName()).phone(request.getPhone())
                 .email(request.getEmail()).message(request.getMessage())
                 .status("new").createdAt(LocalDateTime.now()).build();
-        contactMessageRepository.save(msg);
+        ContactMessage saved = contactMessageRepository.save(msg);
+
+        // Push notification
+        eventPublisher.publishEvent(new NotificationEvent(
+                this, NotifType.contact,
+                "Liên hệ mới từ " + request.getFullName(),
+                request.getMessage(),
+                saved.getId(),
+                "/cms/contacts"
+        ));
     }
 
     @Override

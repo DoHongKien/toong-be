@@ -1,5 +1,6 @@
 package com.toong.service.impl;
 
+import com.toong.modal.dto.EmployeeDropdownDto;
 import com.toong.modal.dto.EmployeeRequestDto;
 import com.toong.modal.dto.EmployeeResponseDto;
 import com.toong.modal.dto.PaginationResponse;
@@ -45,6 +46,28 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .pagination(PaginationResponse.PaginationMeta.builder()
                         .page(page).limit(limit).total(employeePage.getTotalElements()).build())
                 .build();
+    }
+
+    @Override
+    public List<EmployeeDropdownDto> getAllEmployeesForDropdown() {
+        return employeeRepository.findAll().stream()
+                .filter(e -> "active".equals(e.getStatus()))
+                .map(e -> {
+                    RoleResponseDto roleDto = null;
+                    if (e.getRole() != null) {
+                        roleDto = RoleResponseDto.builder()
+                                .id(e.getRole().getId())
+                                .name(e.getRole().getName())
+                                .code(e.getRole().getCode())
+                                .build();
+                    }
+                    return EmployeeDropdownDto.builder()
+                            .id(e.getId())
+                            .fullName(e.getFullName())
+                            .role(roleDto)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

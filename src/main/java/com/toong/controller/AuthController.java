@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/v1/admin/auth")
 @RequiredArgsConstructor
@@ -24,13 +22,6 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    /**
-     * Utility endpoint — CHỈ dùng khi dev để gen BCrypt hash cho SQL seed.
-     * Nên xóa hoặc bảo vệ kỹ trước khi deploy production.
-     *
-     * POST /api/v1/admin/auth/encode-password
-     * Body: { "password": "Admin@123" }
-     */
     @PostMapping("/encode-password")
     public ResponseEntity<ApiResponse<String>> encodePassword(@RequestBody EncodePasswordDto request) {
         String encoded = authService.encodePassword(request.getPassword());

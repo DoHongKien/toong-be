@@ -1,15 +1,18 @@
 package com.toong.service.impl;
 
+import com.toong.event.NotificationEvent;
 import com.toong.modal.dto.AdventurePassRequestDto;
 import com.toong.modal.dto.AdventurePassResponseDto;
 import com.toong.modal.dto.PassOrderRequestDto;
 import com.toong.modal.entity.AdventurePass;
 import com.toong.modal.entity.PassOrder;
+import com.toong.modal.enums.NotifType;
 import com.toong.repository.AdventurePassRepository;
 import com.toong.repository.PassFeatureRepository;
 import com.toong.repository.PassOrderRepository;
 import com.toong.service.AdventurePassService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +25,7 @@ public class AdventurePassServiceImpl implements AdventurePassService {
     private final AdventurePassRepository adventurePassRepository;
     private final PassOrderRepository passOrderRepository;
     private final PassFeatureRepository passFeatureRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<AdventurePassResponseDto> getAllPass() {
@@ -47,7 +51,18 @@ public class AdventurePassServiceImpl implements AdventurePassService {
         order.setEmail(request.getEmail());
         order.setPaymentMethod(request.getPaymentMethod());
 
-        passOrderRepository.save(order);
+        PassOrder saved = passOrderRepository.save(order);
+
+        // Push notification
+        eventPublisher.publishEvent(new NotificationEvent(
+                this, NotifType.pass,
+                "Pass order mới " + orderCode,
+                String.format("%s %s đặt pass %s",
+                        request.getFirstName(), request.getLastName(), pass.getTitle()),
+                saved.getId(),
+                "/cms/pass-orders"
+        ));
+
         return orderCode;
     }
 

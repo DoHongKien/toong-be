@@ -1,0 +1,27 @@
+{
+"banners": [
+	{
+		"id" : 1,
+		"title" : "Banner Tà Năng - Phan Dũng",
+		"image_url" : "https:\/\/images.unsplash.com\/photo-1522199755839-a2bacb67c546?w=1400",
+		"link_url" : "\/tours\/ta-nang-phan-dung",
+		"sort_order" : 1,
+		"is_active" : 1
+	},
+	{
+		"id" : 2,
+		"title" : "Banner Bù Gia Mập",
+		"image_url" : "https:\/\/images.unsplash.com\/photo-1551632811-561732d1e306?w=1400",
+		"link_url" : "\/tours\/bu-gia-map",
+		"sort_order" : 2,
+		"is_active" : 1
+	},
+	{
+		"id" : 3,
+		"title" : "Banner Adventure Pass",
+		"image_url" : "https:\/\/images.unsplash.com\/photo-1469854523086-cc02fe5d8800?w=1400",
+		"link_url" : "\/adventure-pass",
+		"sort_order" : 3,
+		"is_active" : 1
+	}
+]}

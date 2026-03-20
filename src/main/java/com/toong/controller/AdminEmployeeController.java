@@ -1,6 +1,7 @@
 package com.toong.controller;
 
 import com.toong.modal.ApiResponse;
+import com.toong.modal.dto.EmployeeDropdownDto;
 import com.toong.modal.dto.EmployeeRequestDto;
 import com.toong.modal.dto.EmployeeResponseDto;
 import com.toong.modal.dto.PaginationResponse;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/admin/employees")
 @RequiredArgsConstructor
@@ -20,12 +23,18 @@ public class AdminEmployeeController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PaginationResponse<EmployeeResponseDto>>> getAll(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long roleId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "roleId", required = false) Long roleId,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "limit", defaultValue = "20") int limit
     ) {
         return ResponseEntity.ok(ApiResponse.success(employeeService.getAllEmployees(status, roleId, page, limit)));
+    }
+
+    // 4.2b – Full list không phân trang, dùng cho dropdown
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<EmployeeDropdownDto>>> getAllForDropdown() {
+        return ResponseEntity.ok(ApiResponse.success(employeeService.getAllEmployeesForDropdown()));
     }
 
     @PostMapping

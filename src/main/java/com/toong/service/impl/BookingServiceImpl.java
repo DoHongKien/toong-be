@@ -1,13 +1,16 @@
 package com.toong.service.impl;
 
+import com.toong.event.NotificationEvent;
 import com.toong.modal.dto.BookingRequestDto;
 import com.toong.modal.dto.DepartureResponseDto;
 import com.toong.modal.entity.Booking;
 import com.toong.modal.entity.Departure;
+import com.toong.modal.enums.NotifType;
 import com.toong.repository.BookingRepository;
 import com.toong.repository.DepartureRepository;
 import com.toong.service.BookingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ public class BookingServiceImpl implements BookingService {
 
     private final DepartureRepository departureRepository;
     private final BookingRepository bookingRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<DepartureResponseDto> getDepartures(String tourIdentifier) {
@@ -85,11 +89,22 @@ public class BookingServiceImpl implements BookingService {
         booking.setDepositAmount(deposit);
         booking.setRemainingAmount(remaining);
 
-        bookingRepository.save(booking);
+        Booking saved = bookingRepository.save(booking);
 
         departure.setBookedSlots(departure.getBookedSlots() + request.getQuantity());
-
         departureRepository.save(departure);
+
+        // Push notification
+        String tourName = departure.getTour() != null ? departure.getTour().getName() : "";
+        String desc = String.format("%s %s đặt tour %s - %d người",
+                request.getFirstName(), request.getLastName(), tourName, request.getQuantity());
+        eventPublisher.publishEvent(new NotificationEvent(
+                this, NotifType.booking,
+                "Booking mới " + bookingCode,
+                desc,
+                saved.getId(),
+                "/cms/bookings"
+        ));
 
         return bookingCode;
     }

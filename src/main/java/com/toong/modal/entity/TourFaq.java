@@ -2,13 +2,11 @@ package com.toong.modal.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -27,4 +25,7 @@ public class TourFaq extends BaseEntity {
     private String question;
 
     private String answer;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
 }

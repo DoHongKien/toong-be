@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface TourFaqRepository extends JpaRepository<TourFaq, Long> {
 
-    List<TourFaq> findByTourId(Integer tourId);
+    List<TourFaq> findByTour_IdOrderBySortOrderAsc(Long tourId);
 
 }

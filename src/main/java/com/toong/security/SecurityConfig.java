@@ -42,6 +42,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/blog-posts/**").permitAll()
                 .requestMatchers("/api/v1/faqs/**").permitAll()
                 .requestMatchers("/api/v1/contact/**").permitAll()
+                .requestMatchers("/api/v1/media/preview").permitAll()
+                // Migration endpoint — internal use only, no JWT required
+                .requestMatchers("/api/v1/migrate/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 // All other requests require authentication
                 .anyRequest().authenticated()
