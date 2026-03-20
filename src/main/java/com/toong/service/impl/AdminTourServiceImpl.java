@@ -1,10 +1,8 @@
 package com.toong.service.impl;
 
 import com.toong.modal.dto.*;
-import com.toong.modal.entity.PassOrder;
-import com.toong.modal.entity.Tour;
-import com.toong.repository.PassOrderRepository;
-import com.toong.repository.TourRepository;
+import com.toong.modal.entity.*;
+import com.toong.repository.*;
 import com.toong.service.AdminTourService;
 import com.toong.service.MinioService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +11,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,16 +23,17 @@ public class AdminTourServiceImpl implements AdminTourService {
     private final TourRepository tourRepository;
     private final PassOrderRepository passOrderRepository;
     private final MinioService minioService;
+    private final TourCostDetailRepository tourCostDetailRepository;
+    private final TourLuggageRepository tourLuggageRepository;
+    private final TourFaqRepository tourFaqRepository;
 
     @Override
     public PaginationResponse<TourResponseDto> getAllTours(String name, int page, int limit) {
-            Pageable pageable = PageRequest.of(page - 1, limit);
-
+        Pageable pageable = PageRequest.of(page - 1, limit);
         Page<Tour> tourPage = tourRepository.findTourByName(name, pageable);
         var data = tourPage.getContent().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
-
         return PaginationResponse.<TourResponseDto>builder()
                 .data(data)
                 .pagination(PaginationResponse.PaginationMeta.builder()
@@ -41,10 +42,52 @@ public class AdminTourServiceImpl implements AdminTourService {
     }
 
     @Override
+    @Transactional
     public TourResponseDto createTour(TourRequestDto request) {
         Tour tour = new Tour();
         mapRequestToTour(request, tour);
-        return toDto(tourRepository.save(tour));
+        Tour saved = tourRepository.save(tour);
+
+        // Bulk-insert costDetails nếu list hợp lệ (khác null và không rỗng)
+        if (request.getCostDetails() != null && !request.getCostDetails().isEmpty()) {
+            List<TourCostDetail> costDetails = request.getCostDetails().stream()
+                    .map(item -> TourCostDetail.builder()
+                            .tour(saved)
+                            .isIncluded(item.getIsIncluded())
+                            .content(item.getContent())
+                            .sortOrder(item.getSortOrder() != null ? item.getSortOrder() : 0)
+                            .build())
+                    .collect(Collectors.toList());
+            tourCostDetailRepository.saveAll(costDetails);
+        }
+
+        // Bulk-insert luggages nếu list hợp lệ
+        if (request.getLuggages() != null && !request.getLuggages().isEmpty()) {
+            List<TourLuggage> luggages = request.getLuggages().stream()
+                    .map(item -> TourLuggage.builder()
+                            .tour(saved)
+                            .name(item.getName())
+                            .detail(item.getDetail())
+                            .sortOrder(item.getSortOrder() != null ? item.getSortOrder() : 0)
+                            .build())
+                    .collect(Collectors.toList());
+            tourLuggageRepository.saveAll(luggages);
+        }
+
+        // Bulk-insert faqs nếu list hợp lệ
+        if (request.getFaqs() != null && !request.getFaqs().isEmpty()) {
+            List<TourFaq> faqs = request.getFaqs().stream()
+                    .map(item -> TourFaq.builder()
+                            .tour(saved)
+                            .question(item.getQuestion())
+                            .answer(item.getAnswer())
+                            .sortOrder(item.getSortOrder() != null ? item.getSortOrder() : 0)
+                            .build())
+                    .collect(Collectors.toList());
+            tourFaqRepository.saveAll(faqs);
+        }
+
+        return toDto(saved);
     }
 
     @Override
@@ -65,12 +108,10 @@ public class AdminTourServiceImpl implements AdminTourService {
     public PaginationResponse<PassOrderResponseDto> getAllPassOrders(String status, int page, int limit) {
         Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PassOrder> orderPage = passOrderRepository.findAll(pageable);
-
         var data = orderPage.getContent().stream()
                 .filter(o -> status == null || status.equals(o.getStatus()))
                 .map(this::toPassOrderDto)
                 .collect(Collectors.toList());
-
         return PaginationResponse.<PassOrderResponseDto>builder()
                 .data(data)
                 .pagination(PaginationResponse.PaginationMeta.builder()

@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface TourLuggageRepository extends JpaRepository<TourLuggage, Long> {
 
-    List<TourLuggage> findByTourId(Integer tourId);
+    List<TourLuggage> findByTour_IdOrderBySortOrderAsc(Long tourId);
 
 }

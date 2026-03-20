@@ -26,29 +26,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Auth endpoint
-                .requestMatchers("/api/v1/admin/auth/**").permitAll()
-                // Public Tour endpoints
-                .requestMatchers("/api/v1/tours/**").permitAll()
-                // Public Adventure Pass endpoints
-                .requestMatchers("/api/v1/adventure-passes/**").permitAll()
-                // Public Menu endpoints
-                .requestMatchers("/api/v1/menus/**").permitAll()
-                // Public Banner, Blog, FAQ, Contact
-                .requestMatchers("/api/v1/banners/**").permitAll()
-                .requestMatchers("/api/v1/blog-posts/**").permitAll()
-                .requestMatchers("/api/v1/faqs/**").permitAll()
-                .requestMatchers("/api/v1/contact/**").permitAll()
-                .requestMatchers("/api/v1/media/preview").permitAll()
-                // Migration endpoint — internal use only, no JWT required
-                .requestMatchers("/api/v1/migrate/**").permitAll()
-                .requestMatchers("/error").permitAll()
-                // All other requests require authentication
-                .anyRequest().authenticated()
-            );
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Auth endpoint
+                        .requestMatchers("/api/v1/admin/auth/**").permitAll()
+                        // Public Tour endpoints
+                        .requestMatchers("/api/v1/tours/**").permitAll()
+                        // Public Adventure Pass endpoints
+                        .requestMatchers("/api/v1/adventure-passes/**").permitAll()
+                        // Public Menu endpoints
+                        .requestMatchers("/api/v1/menus/**").permitAll()
+                        // Public Banner, Blog, FAQ, Contact
+                        .requestMatchers("/api/v1/banners/**").permitAll()
+                        .requestMatchers("/api/v1/blog-posts/**").permitAll()
+                        .requestMatchers("/api/v1/faqs/**").permitAll()
+                        .requestMatchers("/api/v1/contact/**").permitAll()
+                        .requestMatchers("/api/v1/media/preview").permitAll()
+                        // Migration endpoint — internal use only, no JWT required
+                        .requestMatchers("/api/v1/migrate/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        // All other requests require authentication
+                        .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
