@@ -10,5 +10,6 @@ import java.util.List;
 public interface TourFaqRepository extends JpaRepository<TourFaq, Long> {
 
     List<TourFaq> findByTour_IdOrderBySortOrderAsc(Long tourId);
+    void deleteByTour_Id(Long tourId);
 
 }

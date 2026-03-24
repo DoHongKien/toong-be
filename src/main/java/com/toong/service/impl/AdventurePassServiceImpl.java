@@ -3,6 +3,7 @@ package com.toong.service.impl;
 import com.toong.event.NotificationEvent;
 import com.toong.modal.dto.AdventurePassRequestDto;
 import com.toong.modal.dto.AdventurePassResponseDto;
+import com.toong.modal.dto.PaginationResponse;
 import com.toong.modal.dto.PassOrderRequestDto;
 import com.toong.modal.entity.AdventurePass;
 import com.toong.modal.entity.PassOrder;
@@ -13,6 +14,9 @@ import com.toong.repository.PassOrderRepository;
 import com.toong.service.AdventurePassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -33,6 +37,20 @@ public class AdventurePassServiceImpl implements AdventurePassService {
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PaginationResponse<AdventurePassResponseDto> getAllPassForAdmin(int page, int limit) {
+        PageRequest pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.ASC, "price"));
+        Page<AdventurePass> passPage = adventurePassRepository.findAll(pageable);
+        var data = passPage.getContent().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        return PaginationResponse.<AdventurePassResponseDto>builder()
+                .data(data)
+                .pagination(PaginationResponse.PaginationMeta.builder()
+                        .page(page).limit(limit).total(passPage.getTotalElements()).build())
+                .build();
     }
 
     @Override

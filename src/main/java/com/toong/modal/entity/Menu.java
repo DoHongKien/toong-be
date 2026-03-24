@@ -1,6 +1,7 @@
 package com.toong.modal.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.toong.modal.enums.MenuContext;
 import com.toong.modal.enums.MenuType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -54,6 +55,16 @@ public class Menu extends BaseEntity {
     private Integer orderIndex;
     
     private Boolean isActive;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MenuContext context = MenuContext.CLIENT;
+
+    /** Tên icon Ant Design (VD: "ShoppingOutlined") — chỉ dùng cho context = CMS */
+    private String icon;
+
+    /** Mã permission cần có để thấy menu (VD: "TOUR_VIEW"). NULL = mọi admin đều thấy */
+    private String requiredPermission;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("orderIndex ASC")
