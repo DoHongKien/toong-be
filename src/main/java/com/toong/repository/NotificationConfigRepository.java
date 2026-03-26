@@ -13,6 +13,8 @@ public interface NotificationConfigRepository extends JpaRepository<Notification
 
     List<NotificationConfig> findByIsActiveTrue();
 
+    List<NotificationConfig> findByIsActiveTrueAndNotifType(NotifType notifType);
+
     boolean existsByNotifTypeAndTargetTypeAndTargetId(
             NotifType notifType, TargetType targetType, Long targetId);
 }

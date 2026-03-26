@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/auth/**").permitAll()
                         // Public Tour endpoints
                         .requestMatchers("/api/v1/tours/**").permitAll()
+                        .requestMatchers("/api/v1/bookings/**").permitAll()
                         // Public Adventure Pass endpoints
                         .requestMatchers("/api/v1/adventure-passes/**").permitAll()
                         // Public Menu endpoints
@@ -46,6 +47,8 @@ public class SecurityConfig {
                         // Migration endpoint — internal use only, no JWT required
                         .requestMatchers("/api/v1/migrate/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        // WebSocket handshake — auth thực sự xảy ra trong WebSocketChannelInterceptor (STOMP layer)
+                        .requestMatchers("/ws/**").permitAll()
                         // All other requests require authentication
                         .anyRequest().authenticated());
 
